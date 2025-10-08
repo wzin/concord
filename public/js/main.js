@@ -407,9 +407,9 @@ class ConcordApp {
 
     // Update toggle button icon
     if (footer.classList.contains('collapsed')) {
-      toggleButton.textContent = '▼';
+      toggleButton.textContent = '▲'; // Up arrow = show/expand
     } else {
-      toggleButton.textContent = '▲';
+      toggleButton.textContent = '▼'; // Down arrow = hide/collapse
     }
   }
 
