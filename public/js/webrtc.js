@@ -232,13 +232,6 @@ class WebRTCManager {
           // Google STUN servers
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          // Mozilla STUN server
-          { urls: 'stun:stun.services.mozilla.com' },
-          // Twilio STUN servers
-          { urls: 'stun:global.stun.twilio.com:3478' },
           // Free TURN servers from Open Relay Project
           {
             urls: 'turn:openrelay.metered.ca:80',
@@ -254,8 +247,32 @@ class WebRTCManager {
             urls: 'turn:openrelay.metered.ca:443?transport=tcp',
             username: 'openrelayproject',
             credential: 'openrelayproject'
+          },
+          // Additional TURN servers (Numb STUN/TURN)
+          {
+            urls: 'turn:numb.viagenie.ca',
+            username: 'webrtc@live.com',
+            credential: 'muazkh'
+          },
+          // Twilio STUN + TURN
+          {
+            urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+            username: 'f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d',
+            credential: 'w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw='
+          },
+          {
+            urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
+            username: 'f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d',
+            credential: 'w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw='
+          },
+          {
+            urls: 'turn:global.turn.twilio.com:443?transport=tcp',
+            username: 'f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d',
+            credential: 'w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw='
           }
-        ]
+        ],
+        iceTransportPolicy: 'all', // Try all connection types
+        iceCandidatePoolSize: 10 // Gather more candidates
       }
     });
 
@@ -289,20 +306,33 @@ class WebRTCManager {
 
     // Handle connection established
     peer.on('connect', () => {
-      console.log('Peer connected:', remoteSocketId);
+      console.log('✅ Peer connected:', remoteSocketId);
     });
 
     // Handle errors
     peer.on('error', (err) => {
-      console.error('Peer error:', remoteSocketId, err);
+      console.error('❌ Peer error:', remoteSocketId, err);
       this.removePeer(remoteSocketId);
     });
 
     // Handle close
     peer.on('close', () => {
-      console.log('Peer connection closed:', remoteSocketId);
+      console.log('🔌 Peer connection closed:', remoteSocketId);
       this.removePeer(remoteSocketId);
     });
+
+    // Debug ICE connection state
+    if (peer._pc) {
+      peer._pc.oniceconnectionstatechange = () => {
+        console.log('🧊 ICE connection state:', remoteSocketId, peer._pc.iceConnectionState);
+      };
+      peer._pc.onicegatheringstatechange = () => {
+        console.log('📡 ICE gathering state:', remoteSocketId, peer._pc.iceGatheringState);
+      };
+      peer._pc.onconnectionstatechange = () => {
+        console.log('🔗 Connection state:', remoteSocketId, peer._pc.connectionState);
+      };
+    }
 
     return peer;
   }
