@@ -229,8 +229,16 @@ class WebRTCManager {
       trickle: true,
       config: {
         iceServers: [
+          // Google STUN servers
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' },
+          // Mozilla STUN server
+          { urls: 'stun:stun.services.mozilla.com' },
+          // Twilio STUN servers
+          { urls: 'stun:global.stun.twilio.com:3478' }
         ]
       }
     });

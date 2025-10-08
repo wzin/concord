@@ -64,30 +64,33 @@
     </main>
 
     <!-- Controls -->
-    <footer>
-      <div class="mic-level-container">
-        <span class="mic-label">Mic Level:</span>
-        <div class="mic-level-bar">
-          <div id="mic-level-fill" class="mic-level-fill"></div>
+    <footer id="footer-controls">
+      <button id="footer-toggle" class="footer-toggle" title="Toggle controls">▲</button>
+      <div class="footer-content">
+        <div class="mic-level-container">
+          <span class="mic-label">Mic Level:</span>
+          <div class="mic-level-bar">
+            <div id="mic-level-fill" class="mic-level-fill"></div>
+          </div>
+          <div id="mic-status" class="mic-status">
+            <span id="mic-input-icon" class="mic-status-icon" title="Microphone Input">🎤</span>
+            <span id="speaker-output-icon" class="mic-status-icon" title="Speaker Output">🔊</span>
+          </div>
         </div>
-        <div id="mic-status" class="mic-status">
-          <span id="mic-input-icon" class="mic-status-icon" title="Microphone Input">🎤</span>
-          <span id="speaker-output-icon" class="mic-status-icon" title="Speaker Output">🔊</span>
+        <div class="gain-control-container">
+          <span class="gain-label">Mic Gain:</span>
+          <input type="range" id="gain-slider" min="0" max="300" value="100" step="10">
+          <span id="gain-value" class="gain-value">100%</span>
         </div>
+        <button id="camera-button" class="control-button">
+          <span id="camera-icon">📹</span>
+          <span id="camera-text">Camera</span>
+        </button>
+        <button id="mute-button" class="control-button">
+          <span id="mute-icon">🎤</span>
+          <span id="mute-text">Mute</span>
+        </button>
       </div>
-      <div class="gain-control-container">
-        <span class="gain-label">Mic Gain:</span>
-        <input type="range" id="gain-slider" min="0" max="300" value="100" step="10">
-        <span id="gain-value" class="gain-value">100%</span>
-      </div>
-      <button id="camera-button" class="control-button">
-        <span id="camera-icon">📹</span>
-        <span id="camera-text">Camera</span>
-      </button>
-      <button id="mute-button" class="control-button">
-        <span id="mute-icon">🎤</span>
-        <span id="mute-text">Mute</span>
-      </button>
     </footer>
   </div>
 

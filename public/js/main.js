@@ -35,6 +35,11 @@ class ConcordApp {
       }
     });
 
+    // Footer toggle (mobile)
+    document.getElementById('footer-toggle').addEventListener('click', () => {
+      this.handleFooterToggle();
+    });
+
     // Camera button
     document.getElementById('camera-button').addEventListener('click', () => {
       this.handleToggleCamera();
@@ -219,6 +224,12 @@ class ConcordApp {
   handlePeerStream(socketId, stream) {
     console.log('Received stream from peer:', socketId);
 
+    // Safety check: never play back our own audio
+    if (this.socketManager.socket && socketId === this.socketManager.socket.id) {
+      console.warn('Attempted to play back local stream - ignoring');
+      return;
+    }
+
     // Get participant info
     const participant = this.participants.get(socketId);
     if (participant) {
@@ -226,7 +237,7 @@ class ConcordApp {
       this.addVideoContainer(socketId, participant.username, stream, false);
     }
 
-    // Also create audio element for remote audio (hidden)
+    // Create audio element for remote audio (hidden)
     const audio = document.createElement('audio');
     audio.id = `audio-${socketId}`;
     audio.srcObject = stream;
@@ -325,6 +336,20 @@ class ConcordApp {
     }
   }
 
+  handleFooterToggle() {
+    const footer = document.getElementById('footer-controls');
+    const toggleButton = document.getElementById('footer-toggle');
+
+    footer.classList.toggle('collapsed');
+
+    // Update toggle button icon
+    if (footer.classList.contains('collapsed')) {
+      toggleButton.textContent = '▼';
+    } else {
+      toggleButton.textContent = '▲';
+    }
+  }
+
   handleToggleMute() {
     const isMuted = this.webrtcManager.toggleMute();
     const button = document.getElementById('mute-button');
@@ -412,10 +437,10 @@ class ConcordApp {
 
     if (hasVideo) {
       const video = document.createElement('video');
-      video.srcObject = stream;
+      video.muted = isLocal; // Mute local video to avoid feedback - set BEFORE srcObject
       video.autoplay = true;
       video.playsInline = true;
-      video.muted = isLocal; // Mute local video to avoid feedback
+      video.srcObject = stream;
       container.appendChild(video);
     } else {
       // Audio-only: show avatar
