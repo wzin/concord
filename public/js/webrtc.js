@@ -21,12 +21,58 @@ class WebRTCManager {
       });
 
       console.log('Local audio stream obtained');
+
+      // Start monitoring local audio input
+      this.monitorLocalAudio();
+
       return true;
     } catch (error) {
       console.error('Error accessing microphone:', error);
       alert('Cannot access microphone. Please grant permission and refresh.');
       return false;
     }
+  }
+
+  // Monitor local audio input level
+  monitorLocalAudio() {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioContext.createAnalyser();
+    const microphone = audioContext.createMediaStreamSource(this.localStream);
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    microphone.connect(analyser);
+    analyser.fftSize = 256;
+
+    let isLocalSpeaking = false;
+
+    const checkLocalAudioLevel = () => {
+      if (!this.localStream) return;
+
+      analyser.getByteFrequencyData(dataArray);
+      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+      // Threshold for detecting speaking
+      const threshold = 20;
+      const newIsLocalSpeaking = average > threshold && !this.isMuted;
+
+      if (newIsLocalSpeaking !== isLocalSpeaking) {
+        isLocalSpeaking = newIsLocalSpeaking;
+        // Update UI for local speaking
+        const muteButton = document.getElementById('mute-button');
+        if (muteButton) {
+          if (isLocalSpeaking) {
+            muteButton.classList.add('speaking');
+          } else {
+            muteButton.classList.remove('speaking');
+          }
+        }
+        console.log('Local speaking:', isLocalSpeaking, 'Level:', average.toFixed(2));
+      }
+
+      requestAnimationFrame(checkLocalAudioLevel);
+    };
+
+    checkLocalAudioLevel();
   }
 
   // Create a peer connection as initiator (the one making the call)
@@ -134,7 +180,15 @@ class WebRTCManager {
     audio.id = `audio-${socketId}`;
     audio.srcObject = stream;
     audio.autoplay = true;
+    audio.playsInline = true; // Important for iOS
     document.body.appendChild(audio);
+
+    // Explicitly play the audio (handle autoplay policy)
+    audio.play().catch(err => {
+      console.error('Error playing audio:', err);
+      // If autoplay fails, user interaction is required
+      console.log('Audio autoplay blocked. User interaction may be required.');
+    });
 
     // Detect speaking (using Web Audio API)
     this.detectSpeaking(socketId, stream);
@@ -157,11 +211,12 @@ class WebRTCManager {
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
       // Threshold for detecting speaking (adjust as needed)
-      const threshold = 30;
+      const threshold = 20;
       const newIsSpeaking = average > threshold;
 
       if (newIsSpeaking !== isSpeaking) {
         isSpeaking = newIsSpeaking;
+        console.log(`Remote ${socketId} speaking:`, isSpeaking, 'Level:', average.toFixed(2));
         if (this.callbacks.speaking) {
           this.callbacks.speaking(socketId, isSpeaking);
         }

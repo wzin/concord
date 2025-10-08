@@ -181,6 +181,17 @@ section h2 {
 .participant.speaking {
   background: #e8f4fd;
   border: 2px solid #667eea;
+  animation: participantPulse 1s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+}
+
+@keyframes participantPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(102, 126, 234, 0.8);
+  }
 }
 
 .participant-info {
@@ -343,6 +354,20 @@ footer {
 
 .control-button.muted:hover {
   background: #c0392b;
+}
+
+.control-button.speaking {
+  animation: pulse 0.5s ease-in-out;
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.8);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 #mute-icon {
