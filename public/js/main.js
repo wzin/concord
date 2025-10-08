@@ -297,6 +297,12 @@ class ConcordApp {
 
   handleReceiveMessage(data) {
     this.addChatMessage(data.username, data.message, data.timestamp, data.socketId);
+
+    // Show sidebar when message received so user knows there's a new message
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('hidden-sidebar')) {
+      sidebar.classList.remove('hidden-sidebar');
+    }
   }
 
   handleUserMuted(data) {
