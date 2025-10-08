@@ -8,6 +8,8 @@ class WebRTCManager {
     this.gainNode = null;
     this.peers = new Map(); // socketId -> SimplePeer instance
     this.isMuted = false;
+    this.hasVideo = false;
+    this.isCameraOff = false;
     this.callbacks = {
       peerConnected: null,
       peerDisconnected: null,
@@ -15,43 +17,64 @@ class WebRTCManager {
     };
   }
 
-  async initialize() {
+  async initialize(enableVideo = false, enableAudio = true) {
     try {
-      // Get local audio stream with optimized audio constraints
-      this.localStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
+      this.hasVideo = enableVideo;
+
+      const constraints = {
+        audio: enableAudio ? {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: false, // Disable browser AGC so we can control gain manually
           sampleRate: 48000
-        },
-        video: false
-      });
+        } : false,
+        video: enableVideo ? {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user'
+        } : false
+      };
 
-      console.log('Local audio stream obtained');
+      // Get local media stream
+      this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-      // Set up Web Audio API for manual gain control
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = this.audioContext.createMediaStreamSource(this.localStream);
+      console.log('Local media stream obtained (video:', enableVideo, ', audio:', enableAudio, ')');
 
-      // Create gain node for manual volume control
-      this.gainNode = this.audioContext.createGain();
-      this.gainNode.gain.value = 1.0; // Default 100%
+      if (enableAudio) {
+        // Set up Web Audio API for manual gain control
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = this.audioContext.createMediaStreamSource(this.localStream);
 
-      // Create destination to get processed stream
-      const destination = this.audioContext.createMediaStreamDestination();
+        // Create gain node for manual volume control
+        this.gainNode = this.audioContext.createGain();
+        this.gainNode.gain.value = 1.0; // Default 100%
 
-      // Connect: source -> gain -> destination
-      source.connect(this.gainNode);
-      this.gainNode.connect(destination);
+        // Create destination to get processed stream
+        const destination = this.audioContext.createMediaStreamDestination();
 
-      // This is the stream with gain applied that we'll send to peers
-      this.processedStream = destination.stream;
+        // Connect: source -> gain -> destination
+        source.connect(this.gainNode);
+        this.gainNode.connect(destination);
 
-      console.log('Audio gain control initialized');
+        // If we have video, add video track to processed stream
+        if (enableVideo) {
+          const videoTrack = this.localStream.getVideoTracks()[0];
+          if (videoTrack) {
+            destination.stream.addTrack(videoTrack);
+          }
+        }
 
-      // Start monitoring local audio input (use original stream for monitoring)
-      this.monitorLocalAudio();
+        // This is the stream with gain applied that we'll send to peers
+        this.processedStream = destination.stream;
+
+        console.log('Audio gain control initialized');
+
+        // Start monitoring local audio input (use original stream for monitoring)
+        this.monitorLocalAudio();
+      } else {
+        // No audio, just use the raw stream
+        this.processedStream = this.localStream;
+      }
 
       return true;
     } catch (error) {
@@ -230,10 +253,13 @@ class WebRTCManager {
     // Handle incoming stream
     peer.on('stream', (remoteStream) => {
       console.log('Received remote stream from', remoteSocketId);
-      this.playRemoteStream(remoteSocketId, remoteStream);
 
+      // Detect speaking for this stream
+      this.detectSpeaking(remoteSocketId, remoteStream);
+
+      // Notify the app about the new stream
       if (this.callbacks.peerConnected) {
-        this.callbacks.peerConnected(remoteSocketId);
+        this.callbacks.peerConnected(remoteSocketId, remoteStream);
       }
     });
 
@@ -395,6 +421,28 @@ class WebRTCManager {
     this.socketManager.toggleMute(this.isMuted);
 
     return this.isMuted;
+  }
+
+  // Toggle camera
+  toggleCamera() {
+    if (!this.localStream || !this.hasVideo) return false;
+
+    this.isCameraOff = !this.isCameraOff;
+
+    // Enable/disable video track
+    this.localStream.getVideoTracks().forEach(track => {
+      track.enabled = !this.isCameraOff;
+    });
+
+    // Also update processed stream if it exists
+    if (this.processedStream) {
+      this.processedStream.getVideoTracks().forEach(track => {
+        track.enabled = !this.isCameraOff;
+      });
+    }
+
+    console.log('Camera', this.isCameraOff ? 'OFF' : 'ON');
+    return this.isCameraOff;
   }
 
   // Clean up all connections

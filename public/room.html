@@ -10,8 +10,18 @@
   <!-- Username Modal -->
   <div id="username-modal" class="modal">
     <div class="modal-content">
-      <h2>Join Voice Room</h2>
+      <h2>Join Room</h2>
       <input type="text" id="username-input" placeholder="Enter your username" maxlength="50" autocomplete="off">
+      <div class="media-options">
+        <label class="media-option">
+          <input type="checkbox" id="video-toggle-join" checked>
+          <span>📹 Enable Camera</span>
+        </label>
+        <label class="media-option">
+          <input type="checkbox" id="audio-toggle-join" checked>
+          <span>🎤 Enable Microphone</span>
+        </label>
+      </div>
       <button id="join-button">Join Room</button>
       <p class="error-message" id="username-error"></p>
     </div>
@@ -28,21 +38,29 @@
     </header>
 
     <main>
-      <!-- Participants Section -->
-      <section id="participants-section">
-        <h2>Participants (<span id="participant-count">0</span>)</h2>
-        <div id="participants-list"></div>
+      <!-- Video Grid Section -->
+      <section id="video-section">
+        <div id="video-grid"></div>
       </section>
 
-      <!-- Chat Section -->
-      <section id="chat-section">
-        <h2>Chat</h2>
-        <div id="chat-messages"></div>
-        <div id="chat-input-container">
-          <input type="text" id="chat-input" placeholder="Type a message..." maxlength="1000" autocomplete="off">
-          <button id="send-button">Send</button>
-        </div>
-      </section>
+      <!-- Sidebar -->
+      <aside id="sidebar">
+        <!-- Participants Section -->
+        <section id="participants-section">
+          <h2>Participants (<span id="participant-count">0</span>)</h2>
+          <div id="participants-list"></div>
+        </section>
+
+        <!-- Chat Section -->
+        <section id="chat-section">
+          <h2>Chat</h2>
+          <div id="chat-messages"></div>
+          <div id="chat-input-container">
+            <input type="text" id="chat-input" placeholder="Type a message..." maxlength="1000" autocomplete="off">
+            <button id="send-button">Send</button>
+          </div>
+        </section>
+      </aside>
     </main>
 
     <!-- Controls -->
@@ -62,6 +80,10 @@
         <input type="range" id="gain-slider" min="0" max="300" value="100" step="10">
         <span id="gain-value" class="gain-value">100%</span>
       </div>
+      <button id="camera-button" class="control-button">
+        <span id="camera-icon">📹</span>
+        <span id="camera-text">Camera</span>
+      </button>
       <button id="mute-button" class="control-button">
         <span id="mute-icon">🎤</span>
         <span id="mute-text">Mute</span>

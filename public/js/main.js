@@ -35,6 +35,11 @@ class ConcordApp {
       }
     });
 
+    // Camera button
+    document.getElementById('camera-button').addEventListener('click', () => {
+      this.handleToggleCamera();
+    });
+
     // Mute button
     document.getElementById('mute-button').addEventListener('click', () => {
       this.handleToggleMute();
@@ -75,6 +80,8 @@ class ConcordApp {
 
     // WebRTC callbacks
     this.webrtcManager.on('speaking', (socketId, isSpeaking) => this.handleSpeaking(socketId, isSpeaking));
+    this.webrtcManager.on('peerConnected', (socketId, stream) => this.handlePeerStream(socketId, stream));
+    this.webrtcManager.on('peerDisconnected', (socketId) => this.handlePeerDisconnected(socketId));
   }
 
   showUsernameModal() {
@@ -97,11 +104,28 @@ class ConcordApp {
 
     this.username = username;
 
-    // Initialize WebRTC
-    const success = await this.webrtcManager.initialize();
+    // Get media preferences
+    const enableVideo = document.getElementById('video-toggle-join').checked;
+    const enableAudio = document.getElementById('audio-toggle-join').checked;
+
+    // Initialize WebRTC with user preferences
+    const success = await this.webrtcManager.initialize(enableVideo, enableAudio);
     if (!success) {
-      document.getElementById('username-error').textContent = 'Cannot access microphone';
+      document.getElementById('username-error').textContent = 'Cannot access media devices';
       return;
+    }
+
+    // Show/hide camera button based on whether video is enabled
+    const cameraButton = document.getElementById('camera-button');
+    if (enableVideo) {
+      cameraButton.style.display = 'flex';
+    } else {
+      cameraButton.style.display = 'none';
+    }
+
+    // Display local video if enabled
+    if (enableVideo) {
+      this.addVideoContainer('local', this.username, this.webrtcManager.localStream, true);
     }
 
     // Connect to server
@@ -185,8 +209,41 @@ class ConcordApp {
     this.removeParticipantFromUI(data.socketId);
     this.updateParticipantCount();
 
+    // Remove video container
+    this.removeVideoContainer(data.socketId);
+
     // Remove WebRTC connection
     this.webrtcManager.removePeer(data.socketId);
+  }
+
+  handlePeerStream(socketId, stream) {
+    console.log('Received stream from peer:', socketId);
+
+    // Get participant info
+    const participant = this.participants.get(socketId);
+    if (participant) {
+      // Add video container for this peer
+      this.addVideoContainer(socketId, participant.username, stream, false);
+    }
+
+    // Also create audio element for remote audio (hidden)
+    const audio = document.createElement('audio');
+    audio.id = `audio-${socketId}`;
+    audio.srcObject = stream;
+    audio.autoplay = true;
+    audio.playsInline = true;
+    document.body.appendChild(audio);
+  }
+
+  handlePeerDisconnected(socketId) {
+    console.log('Peer disconnected:', socketId);
+    this.removeVideoContainer(socketId);
+
+    // Remove audio element
+    const audio = document.getElementById(`audio-${socketId}`);
+    if (audio) {
+      audio.remove();
+    }
   }
 
   handleUserKicked(data) {
@@ -292,6 +349,97 @@ class ConcordApp {
 
     // Update display
     document.getElementById('gain-value').textContent = value + '%';
+  }
+
+  handleToggleCamera() {
+    const isCameraOff = this.webrtcManager.toggleCamera();
+    const button = document.getElementById('camera-button');
+    const icon = document.getElementById('camera-icon');
+    const text = document.getElementById('camera-text');
+
+    if (isCameraOff) {
+      button.classList.add('camera-off');
+      icon.textContent = '📹';
+      text.textContent = 'Camera Off';
+
+      // Hide local video
+      const localVideo = document.querySelector('[data-video-id="local"] video');
+      if (localVideo) {
+        localVideo.style.display = 'none';
+      }
+      const localContainer = document.querySelector('[data-video-id="local"]');
+      if (localContainer) {
+        localContainer.classList.add('audio-only');
+      }
+    } else {
+      button.classList.remove('camera-off');
+      icon.textContent = '📹';
+      text.textContent = 'Camera';
+
+      // Show local video
+      const localVideo = document.querySelector('[data-video-id="local"] video');
+      if (localVideo) {
+        localVideo.style.display = 'block';
+      }
+      const localContainer = document.querySelector('[data-video-id="local"]');
+      if (localContainer) {
+        localContainer.classList.remove('audio-only');
+      }
+    }
+  }
+
+  addVideoContainer(id, username, stream, isLocal = false) {
+    const videoGrid = document.getElementById('video-grid');
+
+    // Check if container already exists
+    let container = document.querySelector(`[data-video-id="${id}"]`);
+    if (container) {
+      // Update existing container
+      const video = container.querySelector('video');
+      if (video) {
+        video.srcObject = stream;
+      }
+      return;
+    }
+
+    // Create new container
+    container = document.createElement('div');
+    container.className = 'video-container';
+    container.dataset.videoId = id;
+
+    // Check if stream has video tracks
+    const hasVideo = stream && stream.getVideoTracks().length > 0;
+
+    if (hasVideo) {
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = isLocal; // Mute local video to avoid feedback
+      container.appendChild(video);
+    } else {
+      // Audio-only: show avatar
+      container.classList.add('audio-only');
+      const avatar = document.createElement('div');
+      avatar.className = 'video-avatar';
+      avatar.textContent = username.charAt(0).toUpperCase();
+      container.appendChild(avatar);
+    }
+
+    // Add label
+    const label = document.createElement('div');
+    label.className = 'video-label';
+    label.innerHTML = `<span>${username}${isLocal ? ' (You)' : ''}</span><span class="mic-indicator">🎤</span>`;
+    container.appendChild(label);
+
+    videoGrid.appendChild(container);
+  }
+
+  removeVideoContainer(id) {
+    const container = document.querySelector(`[data-video-id="${id}"]`);
+    if (container) {
+      container.remove();
+    }
   }
 
   handleCopyLink() {
