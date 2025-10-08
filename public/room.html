@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Concord - Voice Chat</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <!-- Username Modal -->
+  <div id="username-modal" class="modal">
+    <div class="modal-content">
+      <h2>Join Voice Room</h2>
+      <input type="text" id="username-input" placeholder="Enter your username" maxlength="50" autocomplete="off">
+      <button id="join-button">Join Room</button>
+      <p class="error-message" id="username-error"></p>
+    </div>
+  </div>
+
+  <!-- Main Application -->
+  <div id="app" class="hidden">
+    <header>
+      <h1>Concord</h1>
+      <div class="header-info">
+        <span id="room-id-display"></span>
+        <button id="copy-link-button" title="Copy room link">📋</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Participants Section -->
+      <section id="participants-section">
+        <h2>Participants (<span id="participant-count">0</span>)</h2>
+        <div id="participants-list"></div>
+      </section>
+
+      <!-- Chat Section -->
+      <section id="chat-section">
+        <h2>Chat</h2>
+        <div id="chat-messages"></div>
+        <div id="chat-input-container">
+          <input type="text" id="chat-input" placeholder="Type a message..." maxlength="1000" autocomplete="off">
+          <button id="send-button">Send</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Controls -->
+    <footer>
+      <button id="mute-button" class="control-button">
+        <span id="mute-icon">🎤</span>
+        <span id="mute-text">Mute</span>
+      </button>
+    </footer>
+  </div>
+
+  <!-- Kicked Modal -->
+  <div id="kicked-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>You were kicked</h2>
+      <p>The room creator has removed you from this room.</p>
+      <button onclick="window.location.href='/'">Create New Room</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
+  <script src="/js/socket.js"></script>
+  <script src="/js/webrtc.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "concord-server",
+  "version": "1.0.0",
+  "description": "Voice chat application server",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "keywords": ["voice", "chat", "webrtc", "socketio"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1"
+  },
+  "engines": {
+    "node": ">=14.17.0"
+  }
+}
