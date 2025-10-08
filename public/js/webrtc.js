@@ -134,7 +134,8 @@ class WebRTCManager {
 
       // Update visual mic level bar
       const micLevelFill = document.getElementById('mic-level-fill');
-      const micStatus = document.getElementById('mic-status');
+      const micInputIcon = document.getElementById('mic-input-icon');
+      const speakerOutputIcon = document.getElementById('speaker-output-icon');
 
       if (micLevelFill) {
         micLevelFill.style.width = percentage + '%';
@@ -145,17 +146,24 @@ class WebRTCManager {
       const threshold = Math.max(5, avgVolume * 1.5); // 150% of average
       const newIsLocalSpeaking = volume > threshold && !this.isMuted;
 
-      // Update status text
-      if (micStatus) {
+      // Update status icons
+      if (micInputIcon) {
         if (this.isMuted) {
-          micStatus.textContent = 'Muted';
-          micStatus.className = 'mic-status muted';
+          micInputIcon.className = 'mic-status-icon muted';
         } else if (newIsLocalSpeaking) {
-          micStatus.textContent = '🔊 SPEAKING';
-          micStatus.className = 'mic-status speaking';
+          micInputIcon.className = 'mic-status-icon active';
         } else {
-          micStatus.textContent = 'Listening...';
-          micStatus.className = 'mic-status';
+          micInputIcon.className = 'mic-status-icon';
+        }
+      }
+
+      // Speaker output icon is active when there are active peers
+      if (speakerOutputIcon) {
+        const hasActivePeers = this.peers.size > 0;
+        if (hasActivePeers) {
+          speakerOutputIcon.className = 'mic-status-icon active';
+        } else {
+          speakerOutputIcon.className = 'mic-status-icon';
         }
       }
 

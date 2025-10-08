@@ -242,25 +242,27 @@ class ConcordApp {
       if (isSpeaking) {
         participantElement.classList.add('speaking');
 
-        // Add speaking indicator if not already present
-        let speakingIndicator = participantElement.querySelector('.participant-speaking-indicator');
-        if (!speakingIndicator) {
-          speakingIndicator = document.createElement('span');
-          speakingIndicator.className = 'participant-speaking-indicator';
-          speakingIndicator.textContent = '🔊 SPEAKING';
+        // Add or update mic icon
+        let micIcon = participantElement.querySelector('.participant-mic-icon');
+        if (!micIcon) {
+          micIcon = document.createElement('span');
+          micIcon.className = 'participant-mic-icon';
+          micIcon.textContent = '🎤';
+          micIcon.title = 'Speaking';
 
           const participantInfo = participantElement.querySelector('.participant-info');
           if (participantInfo) {
-            participantInfo.appendChild(speakingIndicator);
+            participantInfo.appendChild(micIcon);
           }
         }
+        micIcon.classList.add('active');
       } else {
         participantElement.classList.remove('speaking');
 
-        // Remove speaking indicator
-        const speakingIndicator = participantElement.querySelector('.participant-speaking-indicator');
-        if (speakingIndicator) {
-          speakingIndicator.remove();
+        // Deactivate mic icon but keep it visible
+        const micIcon = participantElement.querySelector('.participant-mic-icon');
+        if (micIcon) {
+          micIcon.classList.remove('active');
         }
       }
     }

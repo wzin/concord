@@ -181,17 +181,7 @@ section h2 {
 .participant.speaking {
   background: #e8f4fd;
   border: 2px solid #667eea;
-  animation: participantPulse 1s ease-in-out infinite;
-  box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
-}
-
-@keyframes participantPulse {
-  0%, 100% {
-    box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 25px rgba(102, 126, 234, 0.8);
-  }
+  transition: background 0.3s ease, border 0.3s ease;
 }
 
 .participant-info {
@@ -219,12 +209,17 @@ section h2 {
   color: #999;
 }
 
-.participant-speaking-indicator {
-  font-size: 0.875rem;
-  color: #ff5722;
-  font-weight: 700;
+.participant-mic-icon {
+  font-size: 1rem;
   margin-left: 0.5rem;
-  animation: blink 0.5s ease-in-out infinite;
+  opacity: 0.3;
+  transition: opacity 0.2s ease, color 0.2s ease;
+  color: #999;
+}
+
+.participant-mic-icon.active {
+  opacity: 1;
+  color: #4caf50;
 }
 
 .participant-actions button {
@@ -368,19 +363,27 @@ footer {
 }
 
 .mic-status {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #4caf50;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
   min-width: 80px;
 }
 
-.mic-status.speaking {
-  color: #ff5722;
-  animation: blink 0.5s ease-in-out infinite;
+.mic-status-icon {
+  opacity: 0.3;
+  transition: opacity 0.3s ease, color 0.3s ease;
+  color: #999;
 }
 
-.mic-status.muted {
-  color: #999;
+.mic-status-icon.active {
+  opacity: 1;
+  color: #4caf50;
+}
+
+.mic-status-icon.muted {
+  opacity: 1;
+  color: #e74c3c;
 }
 
 .gain-control-container {
@@ -441,15 +444,6 @@ footer {
   min-width: 50px;
 }
 
-@keyframes blink {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
 .control-button {
   display: flex;
   align-items: center;
@@ -478,17 +472,8 @@ footer {
 }
 
 .control-button.speaking {
-  animation: pulse 0.5s ease-in-out;
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.8);
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.6);
+  transition: box-shadow 0.3s ease;
 }
 
 #mute-icon {
