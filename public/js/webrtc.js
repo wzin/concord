@@ -14,9 +14,14 @@ class WebRTCManager {
 
   async initialize() {
     try {
-      // Get local audio stream
+      // Get local audio stream with optimized audio constraints
       this.localStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true, // Enable automatic gain control
+          sampleRate: 48000
+        },
         video: false
       });
 
@@ -38,32 +43,76 @@ class WebRTCManager {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const analyser = audioContext.createAnalyser();
     const microphone = audioContext.createMediaStreamSource(this.localStream);
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
     microphone.connect(analyser);
-    analyser.fftSize = 256;
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.8;
 
+    const dataArray = new Uint8Array(analyser.fftSize);
     let isLocalSpeaking = false;
+
+    // Dynamic range tracking
+    let maxVolume = 0;
+    let minVolume = 255;
+    let volumeHistory = [];
+    const historyLength = 100; // Track last 100 samples
 
     const checkLocalAudioLevel = () => {
       if (!this.localStream) return;
 
-      analyser.getByteFrequencyData(dataArray);
-      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+      // Use time-domain data for better volume detection
+      analyser.getByteTimeDomainData(dataArray);
+
+      // Calculate RMS (Root Mean Square) for accurate volume
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const normalized = (dataArray[i] - 128) / 128; // Normalize to -1 to 1
+        sum += normalized * normalized;
+      }
+      const rms = Math.sqrt(sum / dataArray.length);
+      const volume = rms * 255; // Scale back to 0-255 range
+
+      // Track volume history for dynamic scaling
+      volumeHistory.push(volume);
+      if (volumeHistory.length > historyLength) {
+        volumeHistory.shift();
+      }
+
+      // Update min/max with some decay to adapt to changing conditions
+      if (volume > maxVolume) {
+        maxVolume = volume;
+      } else {
+        maxVolume = maxVolume * 0.999; // Slowly decay max
+      }
+
+      if (volume < minVolume && volume > 0) {
+        minVolume = volume;
+      }
+
+      // Ensure minimum range
+      const range = Math.max(maxVolume - minVolume, 20);
+
+      // Scale volume to percentage using dynamic range
+      let percentage = 0;
+      if (range > 0) {
+        percentage = Math.min(100, Math.max(0, ((volume - minVolume) / range) * 100));
+      }
+
+      // Apply non-linear scaling for better visual feedback
+      percentage = Math.pow(percentage / 100, 0.7) * 100;
 
       // Update visual mic level bar
       const micLevelFill = document.getElementById('mic-level-fill');
       const micStatus = document.getElementById('mic-status');
 
       if (micLevelFill) {
-        // Scale average (0-255) to percentage (0-100)
-        const percentage = Math.min(100, (average / 128) * 100);
         micLevelFill.style.width = percentage + '%';
       }
 
-      // Threshold for detecting speaking
-      const threshold = 20;
-      const newIsLocalSpeaking = average > threshold && !this.isMuted;
+      // Adaptive threshold based on recent history
+      const avgVolume = volumeHistory.reduce((a, b) => a + b, 0) / volumeHistory.length;
+      const threshold = Math.max(5, avgVolume * 1.5); // 150% of average
+      const newIsLocalSpeaking = volume > threshold && !this.isMuted;
 
       // Update status text
       if (micStatus) {
@@ -227,24 +276,43 @@ class WebRTCManager {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const analyser = audioContext.createAnalyser();
     const microphone = audioContext.createMediaStreamSource(stream);
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
     microphone.connect(analyser);
-    analyser.fftSize = 256;
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.8;
 
+    const dataArray = new Uint8Array(analyser.fftSize);
     let isSpeaking = false;
+    let volumeHistory = [];
+    const historyLength = 50;
 
     const checkAudioLevel = () => {
-      analyser.getByteFrequencyData(dataArray);
-      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+      // Use time-domain data for better volume detection
+      analyser.getByteTimeDomainData(dataArray);
 
-      // Threshold for detecting speaking (adjust as needed)
-      const threshold = 20;
-      const newIsSpeaking = average > threshold;
+      // Calculate RMS (Root Mean Square) for accurate volume
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const normalized = (dataArray[i] - 128) / 128;
+        sum += normalized * normalized;
+      }
+      const rms = Math.sqrt(sum / dataArray.length);
+      const volume = rms * 255;
+
+      // Track volume history
+      volumeHistory.push(volume);
+      if (volumeHistory.length > historyLength) {
+        volumeHistory.shift();
+      }
+
+      // Adaptive threshold based on recent history
+      const avgVolume = volumeHistory.reduce((a, b) => a + b, 0) / volumeHistory.length;
+      const threshold = Math.max(5, avgVolume * 1.5);
+      const newIsSpeaking = volume > threshold;
 
       if (newIsSpeaking !== isSpeaking) {
         isSpeaking = newIsSpeaking;
-        console.log(`Remote ${socketId} speaking:`, isSpeaking, 'Level:', average.toFixed(2));
+        console.log(`Remote ${socketId} speaking:`, isSpeaking, 'Volume:', volume.toFixed(2), 'Threshold:', threshold.toFixed(2));
         if (this.callbacks.speaking) {
           this.callbacks.speaking(socketId, isSpeaking);
         }
