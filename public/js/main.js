@@ -40,6 +40,16 @@ class ConcordApp {
       this.handleSidebarToggle();
     });
 
+    // Sidebar close button
+    document.getElementById('sidebar-close').addEventListener('click', () => {
+      this.handleSidebarClose();
+    });
+
+    // Sidebar backdrop (click outside to close)
+    document.getElementById('sidebar-backdrop').addEventListener('click', () => {
+      this.handleSidebarClose();
+    });
+
     // Footer toggle (mobile)
     document.getElementById('footer-toggle').addEventListener('click', () => {
       this.handleFooterToggle();
@@ -157,6 +167,7 @@ class ConcordApp {
     // Hide sidebar by default on mobile
     if (window.innerWidth <= 768) {
       document.getElementById('sidebar').classList.add('hidden-sidebar');
+      document.getElementById('sidebar-backdrop').classList.add('hidden-sidebar');
     }
   }
 
@@ -300,8 +311,10 @@ class ConcordApp {
 
     // Show sidebar when message received so user knows there's a new message
     const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
     if (sidebar.classList.contains('hidden-sidebar')) {
       sidebar.classList.remove('hidden-sidebar');
+      backdrop.classList.remove('hidden-sidebar');
     }
   }
 
@@ -354,7 +367,16 @@ class ConcordApp {
 
   handleSidebarToggle() {
     const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
     sidebar.classList.toggle('hidden-sidebar');
+    backdrop.classList.toggle('hidden-sidebar');
+  }
+
+  handleSidebarClose() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    sidebar.classList.add('hidden-sidebar');
+    backdrop.classList.add('hidden-sidebar');
   }
 
   handleFooterToggle() {

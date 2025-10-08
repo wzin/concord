@@ -236,10 +236,49 @@ main {
   flex-direction: column;
   gap: 1rem;
   transition: transform 0.3s ease, opacity 0.3s ease;
+  position: relative;
 }
 
 #sidebar.hidden-sidebar {
   transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-close {
+  display: none; /* Hidden on desktop */
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s;
+}
+
+.sidebar-close:hover {
+  background: #f0f0f0;
+}
+
+.sidebar-backdrop {
+  display: none; /* Hidden on desktop */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-backdrop.hidden-sidebar {
   opacity: 0;
   pointer-events: none;
 }
@@ -681,12 +720,23 @@ footer.collapsed .footer-content {
     z-index: 100;
     background: #f5f7fa;
     padding: 1rem;
+    padding-top: 3rem; /* Make room for close button */
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
   }
 
   /* Hidden by default on mobile */
   #sidebar.hidden-sidebar {
     transform: translateX(100%);
+  }
+
+  /* Show close button on mobile */
+  .sidebar-close {
+    display: block;
+  }
+
+  /* Show backdrop on mobile */
+  .sidebar-backdrop {
+    display: block;
   }
 
   #participants-section {
