@@ -383,6 +383,64 @@ footer {
   color: #999;
 }
 
+.gain-control-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.gain-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+}
+
+#gain-slider {
+  width: 150px;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e0e0e0;
+  outline: none;
+  border-radius: 3px;
+}
+
+#gain-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #667eea;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+#gain-slider::-webkit-slider-thumb:hover {
+  background: #5568d3;
+}
+
+#gain-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #667eea;
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
+  transition: background 0.2s;
+}
+
+#gain-slider::-moz-range-thumb:hover {
+  background: #5568d3;
+}
+
+.gain-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #667eea;
+  min-width: 50px;
+}
+
 @keyframes blink {
   0%, 100% {
     opacity: 1;
@@ -490,5 +548,10 @@ footer {
   .mic-level-bar {
     flex: 1;
     min-width: 150px;
+  }
+
+  .gain-control-container {
+    width: 100%;
+    justify-content: center;
   }
 }

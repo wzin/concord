@@ -40,6 +40,11 @@ class ConcordApp {
       this.handleToggleMute();
     });
 
+    // Gain slider
+    document.getElementById('gain-slider').addEventListener('input', (e) => {
+      this.handleGainChange(e.target.value);
+    });
+
     // Copy link button
     document.getElementById('copy-link-button').addEventListener('click', () => {
       this.handleCopyLink();
@@ -276,6 +281,15 @@ class ConcordApp {
       icon.textContent = '🎤';
       text.textContent = 'Mute';
     }
+  }
+
+  handleGainChange(value) {
+    // Slider value is 0-300, convert to 0-3.0 gain
+    const gainValue = value / 100;
+    this.webrtcManager.setGain(gainValue);
+
+    // Update display
+    document.getElementById('gain-value').textContent = value + '%';
   }
 
   handleCopyLink() {

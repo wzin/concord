@@ -3,6 +3,9 @@ class WebRTCManager {
   constructor(socketManager) {
     this.socketManager = socketManager;
     this.localStream = null;
+    this.processedStream = null; // Stream with gain applied
+    this.audioContext = null;
+    this.gainNode = null;
     this.peers = new Map(); // socketId -> SimplePeer instance
     this.isMuted = false;
     this.callbacks = {
@@ -19,7 +22,7 @@ class WebRTCManager {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true, // Enable automatic gain control
+          autoGainControl: false, // Disable browser AGC so we can control gain manually
           sampleRate: 48000
         },
         video: false
@@ -27,7 +30,27 @@ class WebRTCManager {
 
       console.log('Local audio stream obtained');
 
-      // Start monitoring local audio input
+      // Set up Web Audio API for manual gain control
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = this.audioContext.createMediaStreamSource(this.localStream);
+
+      // Create gain node for manual volume control
+      this.gainNode = this.audioContext.createGain();
+      this.gainNode.gain.value = 1.0; // Default 100%
+
+      // Create destination to get processed stream
+      const destination = this.audioContext.createMediaStreamDestination();
+
+      // Connect: source -> gain -> destination
+      source.connect(this.gainNode);
+      this.gainNode.connect(destination);
+
+      // This is the stream with gain applied that we'll send to peers
+      this.processedStream = destination.stream;
+
+      console.log('Audio gain control initialized');
+
+      // Start monitoring local audio input (use original stream for monitoring)
       this.monitorLocalAudio();
 
       return true;
@@ -38,11 +61,19 @@ class WebRTCManager {
     }
   }
 
+  // Set microphone gain (0-3.0, where 1.0 = 100%)
+  setGain(gainValue) {
+    if (this.gainNode) {
+      this.gainNode.gain.value = gainValue;
+      console.log('Microphone gain set to:', gainValue);
+    }
+  }
+
   // Monitor local audio input level
   monitorLocalAudio() {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const analyser = audioContext.createAnalyser();
-    const microphone = audioContext.createMediaStreamSource(this.localStream);
+    // Reuse existing audioContext
+    const analyser = this.audioContext.createAnalyser();
+    const microphone = this.audioContext.createMediaStreamSource(this.localStream);
 
     microphone.connect(analyser);
     analyser.fftSize = 2048;
@@ -163,7 +194,7 @@ class WebRTCManager {
 
     const peer = new SimplePeer({
       initiator: isInitiator,
-      stream: this.localStream,
+      stream: this.processedStream, // Use processed stream with gain applied
       trickle: true,
       config: {
         iceServers: [
@@ -367,6 +398,16 @@ class WebRTCManager {
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => track.stop());
       this.localStream = null;
+    }
+
+    if (this.processedStream) {
+      this.processedStream.getTracks().forEach(track => track.stop());
+      this.processedStream = null;
+    }
+
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
     }
   }
 
