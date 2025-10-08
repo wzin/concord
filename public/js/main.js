@@ -119,6 +119,14 @@ class ConcordApp {
   handleRoomJoined(data) {
     console.log('Room joined:', data);
 
+    // Add yourself to the participant list UI
+    this.addParticipantToUI({
+      socketId: this.socketManager.socket.id,
+      username: this.username,
+      peerId: 'local',
+      isMuted: false
+    }, true); // true = isYou
+
     // Add existing participants
     data.participants.forEach(participant => {
       this.participants.set(participant.socketId, participant);
@@ -265,7 +273,7 @@ class ConcordApp {
     input.value = '';
   }
 
-  addParticipantToUI(participant) {
+  addParticipantToUI(participant, isYou = false) {
     const participantsList = document.getElementById('participants-list');
 
     const div = document.createElement('div');
@@ -286,17 +294,17 @@ class ConcordApp {
     info.appendChild(name);
     info.appendChild(status);
 
-    // Add creator badge if this is the creator
-    if (this.socketManager.isCreator && participant.socketId === this.socketManager.socket.id) {
+    // Add badge if this is you
+    if (isYou || participant.socketId === this.socketManager.socket.id) {
       const badge = document.createElement('span');
       badge.className = 'participant-badge';
-      badge.textContent = 'You';
+      badge.textContent = this.socketManager.isCreator ? 'You (Creator)' : 'You';
       info.appendChild(badge);
     }
 
     div.appendChild(info);
 
-    // Add kick button if current user is creator
+    // Add kick button if current user is creator and this is not you
     if (this.socketManager.isCreator && participant.socketId !== this.socketManager.socket.id) {
       const actions = document.createElement('div');
       actions.className = 'participant-actions';
@@ -335,8 +343,8 @@ class ConcordApp {
   }
 
   updateParticipantCount() {
-    // +1 for current user
-    const count = this.participants.size + 1;
+    // Count actual participant elements in the DOM
+    const count = document.querySelectorAll('.participant').length;
     document.getElementById('participant-count').textContent = count;
   }
 
