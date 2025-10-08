@@ -7,16 +7,28 @@ class WebRTCManager {
     this.audioContext = null;
     this.gainNode = null;
     this.peers = new Map(); // socketId -> SimplePeer instance
-    this.relayPeers = new Map(); // socketId -> { recorder, audioQueue, sourceBuffer }
     this.isMuted = false;
     this.hasVideo = false;
     this.isCameraOff = false;
+    this.iceServers = null; // Will be fetched from server
     this.callbacks = {
       peerConnected: null,
       peerDisconnected: null,
-      speaking: null,
-      relayModeChanged: null
+      speaking: null
     };
+  }
+
+  async fetchTurnConfig() {
+    try {
+      const response = await fetch('/api/turn-credentials');
+      const config = await response.json();
+      this.iceServers = config.iceServers;
+      console.log('✅ TURN configuration loaded from server');
+    } catch (error) {
+      console.error('❌ Failed to fetch TURN config:', error);
+      // Fallback to basic STUN
+      this.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+    }
   }
 
   async initialize(enableVideo = false, enableAudio = true) {
@@ -230,56 +242,12 @@ class WebRTCManager {
       stream: this.processedStream, // Use processed stream with gain applied
       trickle: true,
       config: {
-        iceServers: [
-          // Google STUN servers
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          // Free TURN servers from Open Relay Project
-          {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-          },
-          {
-            urls: 'turn:openrelay.metered.ca:443',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-          },
-          {
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-          },
-          // Additional TURN servers (Numb STUN/TURN)
-          {
-            urls: 'turn:numb.viagenie.ca',
-            username: 'webrtc@live.com',
-            credential: 'muazkh'
-          },
-          // Twilio STUN + TURN
-          {
-            urls: 'turn:global.turn.twilio.com:3478?transport=udp',
-            username: 'f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d',
-            credential: 'w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw='
-          },
-          {
-            urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
-            username: 'f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d',
-            credential: 'w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw='
-          },
-          {
-            urls: 'turn:global.turn.twilio.com:443?transport=tcp',
-            username: 'f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d',
-            credential: 'w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw='
-          }
-        ],
-        // Force relay mode for testing - set to 'all' if you want to try direct connections first
-        iceTransportPolicy: 'relay', // Force TURN relay (more reliable for NAT)
-        iceCandidatePoolSize: 10, // Gather more candidates
+        iceServers: this.iceServers, // Use TURN config from server
+        iceTransportPolicy: 'all', // Try direct P2P first, fall back to TURN
+        iceCandidatePoolSize: 10,
         bundlePolicy: 'max-bundle',
         rtcpMuxPolicy: 'require'
       },
-      // Add offer/answer options
       offerOptions: {
         offerToReceiveAudio: true,
         offerToReceiveVideo: true
@@ -342,37 +310,18 @@ class WebRTCManager {
       this.removePeer(remoteSocketId);
     });
 
-    // Debug ICE connection state and detect failures
+    // Debug ICE connection state
     if (peer._pc) {
       peer._pc.oniceconnectionstatechange = () => {
         console.log('🧊 ICE connection state:', remoteSocketId, peer._pc.iceConnectionState);
-
-        // Switch to relay mode if connection fails
-        if (peer._pc.iceConnectionState === 'failed' || peer._pc.iceConnectionState === 'disconnected') {
-          console.warn('⚠️ WebRTC failed for', remoteSocketId, '- switching to Socket.IO relay mode');
-          this.switchToRelayMode(remoteSocketId);
-        }
       };
       peer._pc.onicegatheringstatechange = () => {
         console.log('📡 ICE gathering state:', remoteSocketId, peer._pc.iceGatheringState);
       };
       peer._pc.onconnectionstatechange = () => {
         console.log('🔗 Connection state:', remoteSocketId, peer._pc.connectionState);
-
-        if (peer._pc.connectionState === 'failed') {
-          console.warn('⚠️ Connection failed for', remoteSocketId, '- switching to Socket.IO relay mode');
-          this.switchToRelayMode(remoteSocketId);
-        }
       };
     }
-
-    // Set timeout to switch to relay if connection doesn't establish
-    setTimeout(() => {
-      if (peer._pc && peer._pc.connectionState !== 'connected') {
-        console.warn('⏱️ WebRTC timeout for', remoteSocketId, '- switching to Socket.IO relay mode');
-        this.switchToRelayMode(remoteSocketId);
-      }
-    }, 10000); // 10 second timeout
 
     return peer;
   }
@@ -565,121 +514,6 @@ class WebRTCManager {
     if (this.audioContext) {
       this.audioContext.close();
       this.audioContext = null;
-    }
-  }
-
-  // Switch to Socket.IO relay mode when WebRTC fails
-  switchToRelayMode(remoteSocketId) {
-    // Don't switch if already in relay mode
-    if (this.relayPeers.has(remoteSocketId)) {
-      return;
-    }
-
-    console.log('🔄 Switching to relay mode for', remoteSocketId);
-
-    // Notify the remote peer to also switch
-    this.socketManager.socket.emit('switch-to-relay', { to: remoteSocketId });
-
-    // Start recording and sending media chunks
-    this.startMediaRelay(remoteSocketId);
-
-    // Notify UI
-    if (this.callbacks.relayModeChanged) {
-      this.callbacks.relayModeChanged(remoteSocketId, true);
-    }
-  }
-
-  // Start relaying media through Socket.IO
-  startMediaRelay(remoteSocketId) {
-    if (!this.processedStream) return;
-
-    try {
-      // Use MediaRecorder to capture chunks
-      const mimeType = 'audio/webm;codecs=opus';
-      const recorder = new MediaRecorder(this.processedStream, {
-        mimeType: mimeType,
-        audioBitsPerSecond: 128000
-      });
-
-      const audioQueue = [];
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          // Convert to base64 and send via Socket.IO
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const base64 = reader.result.split(',')[1];
-            this.socketManager.socket.emit('media-chunk', {
-              to: remoteSocketId,
-              chunk: base64,
-              type: mimeType
-            });
-          };
-          reader.readAsDataURL(event.data);
-        }
-      };
-
-      // Send chunks every 100ms
-      recorder.start(100);
-
-      this.relayPeers.set(remoteSocketId, {
-        recorder: recorder,
-        audioQueue: audioQueue
-      });
-
-      console.log('✅ Media relay started for', remoteSocketId);
-    } catch (error) {
-      console.error('❌ Failed to start media relay:', error);
-    }
-  }
-
-  // Handle incoming media chunk from Socket.IO relay
-  handleMediaChunk(fromSocketId, chunk, type) {
-    // Create audio element if doesn't exist
-    let audio = document.getElementById(`relay-audio-${fromSocketId}`);
-    if (!audio) {
-      audio = document.createElement('audio');
-      audio.id = `relay-audio-${fromSocketId}`;
-      audio.autoplay = true;
-      audio.playsInline = true;
-      document.body.appendChild(audio);
-      console.log('📻 Created relay audio element for', fromSocketId);
-    }
-
-    // Decode base64 and play
-    try {
-      const binary = atob(chunk);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: type });
-      const url = URL.createObjectURL(blob);
-
-      // Create a new audio element for each chunk (simple approach)
-      const chunkAudio = new Audio(url);
-      chunkAudio.play().catch(err => console.error('Error playing chunk:', err));
-
-      // Clean up URL after playing
-      chunkAudio.onended = () => URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error handling media chunk:', error);
-    }
-  }
-
-  // Stop relay mode for a peer
-  stopMediaRelay(remoteSocketId) {
-    const relayPeer = this.relayPeers.get(remoteSocketId);
-    if (relayPeer && relayPeer.recorder) {
-      relayPeer.recorder.stop();
-      this.relayPeers.delete(remoteSocketId);
-      console.log('🛑 Stopped media relay for', remoteSocketId);
-    }
-
-    // Remove relay audio element
-    const audio = document.getElementById(`relay-audio-${remoteSocketId}`);
-    if (audio) {
-      audio.remove();
     }
   }
 

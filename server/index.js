@@ -24,6 +24,40 @@ app.get('/:roomId', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/room.html'));
 });
 
+// TURN server configuration endpoint
+app.get('/api/turn-credentials', (req, res) => {
+  const username = process.env.TURN_USERNAME || '8cdc3d1039188da71fc4741a';
+  const credential = process.env.TURN_PASSWORD || '4WPTPa4UhibcafoR';
+
+  res.json({
+    iceServers: [
+      {
+        urls: "stun:stun.relay.metered.ca:80"
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80",
+        username: username,
+        credential: credential
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+        username: username,
+        credential: credential
+      },
+      {
+        urls: "turn:global.relay.metered.ca:443",
+        username: username,
+        credential: credential
+      },
+      {
+        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+        username: username,
+        credential: credential
+      }
+    ]
+  });
+});
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -95,23 +129,6 @@ io.on('connection', (socket) => {
     socket.to(to).emit('ice-candidate', {
       from: socket.id,
       candidate: candidate
-    });
-  });
-
-  // Media relay - fallback when WebRTC fails
-  socket.on('media-chunk', ({ to, chunk, type }) => {
-    // Forward media chunk to specific peer
-    socket.to(to).emit('media-chunk', {
-      from: socket.id,
-      chunk: chunk,
-      type: type
-    });
-  });
-
-  // Notify peer to switch to relay mode
-  socket.on('switch-to-relay', ({ to }) => {
-    socket.to(to).emit('peer-switched-to-relay', {
-      from: socket.id
     });
   });
 
