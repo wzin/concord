@@ -271,8 +271,20 @@ class WebRTCManager {
             credential: 'w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw='
           }
         ],
-        iceTransportPolicy: 'all', // Try all connection types
-        iceCandidatePoolSize: 10 // Gather more candidates
+        // Force relay mode for testing - set to 'all' if you want to try direct connections first
+        iceTransportPolicy: 'relay', // Force TURN relay (more reliable for NAT)
+        iceCandidatePoolSize: 10, // Gather more candidates
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require'
+      },
+      // Add offer/answer options
+      offerOptions: {
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      },
+      answerOptions: {
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
       }
     });
 
