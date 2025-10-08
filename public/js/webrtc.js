@@ -271,11 +271,11 @@ class WebRTCManager {
         this.socketManager.sendWebRTCAnswer(remoteSocketId, data);
       } else if (data.candidate) {
         // ICE candidate
-        const candidate = data.candidate;
-        const candidateType = candidate.includes('relay') ? '🔄 RELAY' :
-                             candidate.includes('srflx') ? '🌐 SRFLX' :
-                             candidate.includes('host') ? '🏠 HOST' : '❓ UNKNOWN';
-        console.log(`📤 ICE candidate ${candidateType}:`, remoteSocketId, candidate.substring(0, 50) + '...');
+        const candidateStr = typeof data.candidate === 'string' ? data.candidate : data.candidate.candidate || '';
+        const candidateType = candidateStr.includes('relay') ? '🔄 RELAY' :
+                             candidateStr.includes('srflx') ? '🌐 SRFLX' :
+                             candidateStr.includes('host') ? '🏠 HOST' : '❓ UNKNOWN';
+        console.log(`📤 ICE candidate ${candidateType}:`, remoteSocketId, candidateStr.substring(0, 50) + '...');
         this.socketManager.sendICECandidate(remoteSocketId, data);
       }
     });
@@ -349,7 +349,7 @@ class WebRTCManager {
     const peer = this.peers.get(fromSocketId);
     if (peer) {
       if (candidate.candidate) {
-        const candidateStr = candidate.candidate;
+        const candidateStr = typeof candidate.candidate === 'string' ? candidate.candidate : candidate.candidate.candidate || '';
         const candidateType = candidateStr.includes('relay') ? '🔄 RELAY' :
                              candidateStr.includes('srflx') ? '🌐 SRFLX' :
                              candidateStr.includes('host') ? '🏠 HOST' : '❓ UNKNOWN';

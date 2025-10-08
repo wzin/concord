@@ -19,8 +19,25 @@ class ConcordApp {
       return;
     }
 
+    // Fetch and display version info
+    this.fetchVersionInfo();
+
     // Show username modal
     this.showUsernameModal();
+  }
+
+  async fetchVersionInfo() {
+    try {
+      const response = await fetch('/api/version');
+      const data = await response.json();
+      const versionElement = document.getElementById('version-info');
+      if (versionElement) {
+        versionElement.textContent = `v${data.commit}`;
+        versionElement.title = `Commit: ${data.commit}\nDeployed: ${new Date(data.timestamp).toLocaleString()}`;
+      }
+    } catch (error) {
+      console.warn('Could not fetch version info:', error);
+    }
   }
 
   setupEventListeners() {

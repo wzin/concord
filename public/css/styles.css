@@ -470,6 +470,18 @@ footer {
   position: relative;
 }
 
+.version-info {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  font-size: 0.65rem;
+  color: #ccc;
+  font-family: monospace;
+  user-select: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .footer-toggle {
   display: none; /* Hidden by default, shown on mobile */
   position: absolute;

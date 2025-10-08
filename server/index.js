@@ -2,6 +2,7 @@ const express = require('express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const { execSync } = require('child_process');
 const roomManager = require('./roomManager');
 
 const app = express();
@@ -9,6 +10,14 @@ const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 const PORT = process.env.PORT || 3000;
+
+// Get git commit hash for version tracking
+let GIT_COMMIT_HASH = 'unknown';
+try {
+  GIT_COMMIT_HASH = execSync('git rev-parse --short HEAD').toString().trim();
+} catch (error) {
+  console.warn('Could not get git commit hash:', error.message);
+}
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
@@ -55,6 +64,14 @@ app.get('/api/turn-credentials', (req, res) => {
         credential: credential
       }
     ]
+  });
+});
+
+// Version/revision endpoint
+app.get('/api/version', (req, res) => {
+  res.json({
+    commit: GIT_COMMIT_HASH,
+    timestamp: new Date().toISOString()
   });
 });
 
