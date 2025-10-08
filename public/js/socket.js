@@ -17,6 +17,8 @@ class SocketManager {
       webrtcOffer: null,
       webrtcAnswer: null,
       iceCandidate: null,
+      mediaChunk: null,
+      peerSwitchedToRelay: null,
       error: null
     };
   }
@@ -95,6 +97,20 @@ class SocketManager {
     this.socket.on('ice-candidate', (data) => {
       if (this.callbacks.iceCandidate) {
         this.callbacks.iceCandidate(data);
+      }
+    });
+
+    // Media relay - receive chunks
+    this.socket.on('media-chunk', (data) => {
+      if (this.callbacks.mediaChunk) {
+        this.callbacks.mediaChunk(data);
+      }
+    });
+
+    // Peer switched to relay mode
+    this.socket.on('peer-switched-to-relay', (data) => {
+      if (this.callbacks.peerSwitchedToRelay) {
+        this.callbacks.peerSwitchedToRelay(data);
       }
     });
 

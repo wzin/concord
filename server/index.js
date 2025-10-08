@@ -98,6 +98,23 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Media relay - fallback when WebRTC fails
+  socket.on('media-chunk', ({ to, chunk, type }) => {
+    // Forward media chunk to specific peer
+    socket.to(to).emit('media-chunk', {
+      from: socket.id,
+      chunk: chunk,
+      type: type
+    });
+  });
+
+  // Notify peer to switch to relay mode
+  socket.on('switch-to-relay', ({ to }) => {
+    socket.to(to).emit('peer-switched-to-relay', {
+      from: socket.id
+    });
+  });
+
   // Text message
   socket.on('send-message', ({ message }) => {
     if (!currentRoomId) return;

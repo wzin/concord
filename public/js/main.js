@@ -97,11 +97,42 @@ class ConcordApp {
     this.socketManager.on('webrtcOffer', (data) => this.webrtcManager.handleOffer(data.from, data.offer));
     this.socketManager.on('webrtcAnswer', (data) => this.webrtcManager.handleAnswer(data.from, data.answer));
     this.socketManager.on('iceCandidate', (data) => this.webrtcManager.handleICECandidate(data.from, data.candidate));
+    this.socketManager.on('mediaChunk', (data) => this.webrtcManager.handleMediaChunk(data.from, data.chunk, data.type));
+    this.socketManager.on('peerSwitchedToRelay', (data) => this.webrtcManager.startMediaRelay(data.from));
 
     // WebRTC callbacks
     this.webrtcManager.on('speaking', (socketId, isSpeaking) => this.handleSpeaking(socketId, isSpeaking));
     this.webrtcManager.on('peerConnected', (socketId, stream) => this.handlePeerStream(socketId, stream));
     this.webrtcManager.on('peerDisconnected', (socketId) => this.handlePeerDisconnected(socketId));
+    this.webrtcManager.on('relayModeChanged', (socketId, isRelay) => this.handleRelayModeChanged(socketId, isRelay));
+  }
+
+  handleRelayModeChanged(socketId, isRelay) {
+    console.log('🔄 Relay mode changed for', socketId, ':', isRelay);
+
+    // Add visual indicator to participant
+    const participantElement = document.querySelector(`[data-socket-id="${socketId}"]`);
+    if (participantElement) {
+      let relayBadge = participantElement.querySelector('.relay-badge');
+
+      if (isRelay) {
+        if (!relayBadge) {
+          relayBadge = document.createElement('span');
+          relayBadge.className = 'relay-badge';
+          relayBadge.textContent = '🔄 Relay';
+          relayBadge.title = 'Using Socket.IO relay (WebRTC failed)';
+
+          const participantInfo = participantElement.querySelector('.participant-info');
+          if (participantInfo) {
+            participantInfo.appendChild(relayBadge);
+          }
+        }
+      } else {
+        if (relayBadge) {
+          relayBadge.remove();
+        }
+      }
+    }
   }
 
   showUsernameModal() {

@@ -345,6 +345,15 @@ section h2 {
   border-radius: 12px;
 }
 
+.relay-badge {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  background: #ff9800;
+  color: white;
+  border-radius: 12px;
+  margin-left: 0.5rem;
+}
+
 .participant-status {
   font-size: 0.875rem;
   color: #999;
