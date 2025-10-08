@@ -35,33 +35,41 @@ app.get('/:roomId', (req, res) => {
 
 // TURN server configuration endpoint
 app.get('/api/turn-credentials', (req, res) => {
-  const username = process.env.TURN_USERNAME || '8cdc3d1039188da71fc4741a';
-  const credential = process.env.TURN_PASSWORD || '4WPTPa4UhibcafoR';
+  const meteredUsername = process.env.TURN_USERNAME || '8cdc3d1039188da71fc4741a';
+  const meteredCredential = process.env.TURN_PASSWORD || '4WPTPa4UhibcafoR';
+
+  // Custom coturn server credentials
+  const coturnUsername = process.env.COTURN_USERNAME || '1p2i3j1oi23j1o2i3j';
+  const coturnCredential = process.env.COTURN_PASSWORD || 'qpwoekqpwoekqpwoek';
+  const coturnServer = process.env.COTURN_SERVER || '157.90.151.35';
 
   res.json({
     iceServers: [
+      // Google STUN
       {
-        urls: "stun:stun.relay.metered.ca:80"
+        urls: "stun:stun.l.google.com:19302"
       },
+      // Custom coturn server (primary)
+      {
+        urls: `turn:${coturnServer}:3478`,
+        username: coturnUsername,
+        credential: coturnCredential
+      },
+      {
+        urls: `turn:${coturnServer}:3478?transport=tcp`,
+        username: coturnUsername,
+        credential: coturnCredential
+      },
+      // Metered.ca as fallback
       {
         urls: "turn:global.relay.metered.ca:80",
-        username: username,
-        credential: credential
-      },
-      {
-        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: username,
-        credential: credential
+        username: meteredUsername,
+        credential: meteredCredential
       },
       {
         urls: "turn:global.relay.metered.ca:443",
-        username: username,
-        credential: credential
-      },
-      {
-        urls: "turns:global.relay.metered.ca:443?transport=tcp",
-        username: username,
-        credential: credential
+        username: meteredUsername,
+        credential: meteredCredential
       }
     ]
   });
