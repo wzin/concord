@@ -294,11 +294,18 @@ class WebRTCManager {
     // Handle signaling data (offer/answer)
     peer.on('signal', (data) => {
       if (data.type === 'offer') {
+        console.log('📤 Sending offer to', remoteSocketId);
         this.socketManager.sendWebRTCOffer(remoteSocketId, data);
       } else if (data.type === 'answer') {
+        console.log('📤 Sending answer to', remoteSocketId);
         this.socketManager.sendWebRTCAnswer(remoteSocketId, data);
-      } else {
+      } else if (data.candidate) {
         // ICE candidate
+        const candidate = data.candidate;
+        const candidateType = candidate.includes('relay') ? '🔄 RELAY' :
+                             candidate.includes('srflx') ? '🌐 SRFLX' :
+                             candidate.includes('host') ? '🏠 HOST' : '❓ UNKNOWN';
+        console.log(`📤 ICE candidate ${candidateType}:`, remoteSocketId, candidate.substring(0, 50) + '...');
         this.socketManager.sendICECandidate(remoteSocketId, data);
       }
     });
@@ -371,6 +378,13 @@ class WebRTCManager {
   handleICECandidate(fromSocketId, candidate) {
     const peer = this.peers.get(fromSocketId);
     if (peer) {
+      if (candidate.candidate) {
+        const candidateStr = candidate.candidate;
+        const candidateType = candidateStr.includes('relay') ? '🔄 RELAY' :
+                             candidateStr.includes('srflx') ? '🌐 SRFLX' :
+                             candidateStr.includes('host') ? '🏠 HOST' : '❓ UNKNOWN';
+        console.log(`📥 ICE candidate ${candidateType}:`, fromSocketId, candidateStr.substring(0, 50) + '...');
+      }
       peer.signal(candidate);
     }
   }
