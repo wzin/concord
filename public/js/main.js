@@ -35,6 +35,11 @@ class ConcordApp {
       }
     });
 
+    // Sidebar toggle
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+      this.handleSidebarToggle();
+    });
+
     // Footer toggle (mobile)
     document.getElementById('footer-toggle').addEventListener('click', () => {
       this.handleFooterToggle();
@@ -148,6 +153,11 @@ class ConcordApp {
 
     // Update UI
     document.getElementById('room-id-display').textContent = `Room: ${this.roomId.substring(0, 8)}...`;
+
+    // Hide sidebar by default on mobile
+    if (window.innerWidth <= 768) {
+      document.getElementById('sidebar').classList.add('hidden-sidebar');
+    }
   }
 
   handleRoomJoined(data) {
@@ -334,6 +344,11 @@ class ConcordApp {
         }
       }
     }
+  }
+
+  handleSidebarToggle() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('hidden-sidebar');
   }
 
   handleFooterToggle() {
