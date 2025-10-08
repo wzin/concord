@@ -51,9 +51,33 @@ class WebRTCManager {
       analyser.getByteFrequencyData(dataArray);
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
+      // Update visual mic level bar
+      const micLevelFill = document.getElementById('mic-level-fill');
+      const micStatus = document.getElementById('mic-status');
+
+      if (micLevelFill) {
+        // Scale average (0-255) to percentage (0-100)
+        const percentage = Math.min(100, (average / 128) * 100);
+        micLevelFill.style.width = percentage + '%';
+      }
+
       // Threshold for detecting speaking
       const threshold = 20;
       const newIsLocalSpeaking = average > threshold && !this.isMuted;
+
+      // Update status text
+      if (micStatus) {
+        if (this.isMuted) {
+          micStatus.textContent = 'Muted';
+          micStatus.className = 'mic-status muted';
+        } else if (newIsLocalSpeaking) {
+          micStatus.textContent = '🔊 SPEAKING';
+          micStatus.className = 'mic-status speaking';
+        } else {
+          micStatus.textContent = 'Listening...';
+          micStatus.className = 'mic-status';
+        }
+      }
 
       if (newIsLocalSpeaking !== isLocalSpeaking) {
         isLocalSpeaking = newIsLocalSpeaking;
@@ -66,7 +90,11 @@ class WebRTCManager {
             muteButton.classList.remove('speaking');
           }
         }
-        console.log('Local speaking:', isLocalSpeaking, 'Level:', average.toFixed(2));
+
+        // Update local participant speaking indicator
+        if (this.callbacks.speaking) {
+          this.callbacks.speaking('local', isLocalSpeaking);
+        }
       }
 
       requestAnimationFrame(checkLocalAudioLevel);

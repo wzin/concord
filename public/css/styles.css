@@ -219,6 +219,14 @@ section h2 {
   color: #999;
 }
 
+.participant-speaking-indicator {
+  font-size: 0.875rem;
+  color: #ff5722;
+  font-weight: 700;
+  margin-left: 0.5rem;
+  animation: blink 0.5s ease-in-out infinite;
+}
+
 .participant-actions button {
   background: #e74c3c;
   color: white;
@@ -326,7 +334,62 @@ footer {
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  align-items: center;
+  gap: 2rem;
+}
+
+.mic-level-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mic-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.mic-level-bar {
+  width: 200px;
+  height: 24px;
+  background: #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.mic-level-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50 0%, #8bc34a 50%, #ffc107 75%, #ff5722 100%);
+  width: 0%;
+  transition: width 0.1s ease-out;
+  border-radius: 12px;
+}
+
+.mic-status {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4caf50;
+  min-width: 80px;
+}
+
+.mic-status.speaking {
+  color: #ff5722;
+  animation: blink 0.5s ease-in-out infinite;
+}
+
+.mic-status.muted {
+  color: #999;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .control-button {
@@ -414,5 +477,18 @@ footer {
 
   footer {
     padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .mic-level-container {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .mic-level-bar {
+    flex: 1;
+    min-width: 150px;
   }
 }

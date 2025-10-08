@@ -225,12 +225,38 @@ class ConcordApp {
   }
 
   handleSpeaking(socketId, isSpeaking) {
+    // Handle local user speaking indicator
+    if (socketId === 'local') {
+      socketId = this.socketManager.socket ? this.socketManager.socket.id : null;
+    }
+
+    if (!socketId) return;
+
     const participantElement = document.querySelector(`[data-socket-id="${socketId}"]`);
     if (participantElement) {
       if (isSpeaking) {
         participantElement.classList.add('speaking');
+
+        // Add speaking indicator if not already present
+        let speakingIndicator = participantElement.querySelector('.participant-speaking-indicator');
+        if (!speakingIndicator) {
+          speakingIndicator = document.createElement('span');
+          speakingIndicator.className = 'participant-speaking-indicator';
+          speakingIndicator.textContent = '🔊 SPEAKING';
+
+          const participantInfo = participantElement.querySelector('.participant-info');
+          if (participantInfo) {
+            participantInfo.appendChild(speakingIndicator);
+          }
+        }
       } else {
         participantElement.classList.remove('speaking');
+
+        // Remove speaking indicator
+        const speakingIndicator = participantElement.querySelector('.participant-speaking-indicator');
+        if (speakingIndicator) {
+          speakingIndicator.remove();
+        }
       }
     }
   }
