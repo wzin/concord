@@ -238,7 +238,23 @@ class WebRTCManager {
           // Mozilla STUN server
           { urls: 'stun:stun.services.mozilla.com' },
           // Twilio STUN servers
-          { urls: 'stun:global.stun.twilio.com:3478' }
+          { urls: 'stun:global.stun.twilio.com:3478' },
+          // Free TURN servers from Open Relay Project
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          }
         ]
       }
     });
